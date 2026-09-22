@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Shorts Cleaner",
+  "version": "1.1.0",
+  "description": "Delete watched YouTube Shorts from your history by date range",
+  "permissions": [],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/feed/history*"
+      ],
+      "js": [
+        "src/historyScraper.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
