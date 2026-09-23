@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build outputs (keep src/*.js in repo for load-and-use)
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
