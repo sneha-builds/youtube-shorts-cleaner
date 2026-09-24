@@ -5,7 +5,7 @@ A Chrome extension (Manifest V3) that deletes watched **YouTube Shorts** from yo
 ## What it does
 
 - Lets you pick **Today · Yesterday · Last 3 / 7 / 30 Days**
-- Auto-scrolls your history page (vertically + horizontally) to load every Short
+- Auto-scrolls your history page (vertically + horizontally) to load every Short   
 - Reads the watch date of each Short from its section header ("Today", "Saturday", "7 Sept", …)
 - Shows a count with titles **before** anything is deleted
 - On confirm, clicks "Remove from watch history" on each matching Short, one by one, with a live progress counter
