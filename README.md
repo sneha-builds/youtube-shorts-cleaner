@@ -27,7 +27,7 @@ The UI lives **on the YouTube history page**. When you open `youtube.com/feed/hi
 
 1. Click the extension icon → click **Open YouTube History**
 2. A panel appears: `[Today | Yesterday | Last 3 Days | Last 7 Days | Last 30 Days]`
-3. Pick a range → it scans and shows the count (with watch-date breakdown)
+3. Pick a range → it scans and shows the count (with watch-date breakdown)  
 4. Confirm → it deletes each matching Short, showing progress
 5. Done — summary shown on the panel
 
