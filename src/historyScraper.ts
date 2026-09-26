@@ -432,16 +432,29 @@ function findTitleLinks(): Element[] {
   return Array.from(links);
 }
 
-function cardDurationSeconds(card: Element): number | null {
-  const el = card.querySelector('ytd-thumbnail-overlay-time-status-renderer, [class*="time-status"], span[class*="badge"]') as HTMLElement | null;
-  const src = (el ? el.textContent : '') || (card.textContent || '');
-  const m = src.match(/\b(\d{1,3}):(\d{2})(?::(\d{2}))?\b/);
-  if (!m) return null;
-  const a = parseInt(m[1], 10);
-  const b = parseInt(m[2], 10);
-  const c = m[3] ? parseInt(m[3], 10) : 0;
-  const hasHours = !!m[3] || a >= 10;
+function timecodeToSeconds(a: number, b: number, c: number, hasHours: boolean): number {
   return hasHours ? a * 3600 + b * 60 + c : a * 60 + b;
+}
+
+function cardDurationSeconds(card: Element): number | null {
+  const preferred = 'ytd-thumbnail-overlay-time-status-renderer, [class*="time-status"], .badge-shape-wiz__text, span[class*="badge"], [class*="time"]';
+  for (const el of card.querySelectorAll<HTMLElement>(preferred)) {
+    const t = (el.textContent || '').trim();
+    const m = t.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
+    if (m) return timecodeToSeconds(parseInt(m[1], 10), parseInt(m[2], 10), m[3] ? parseInt(m[3], 10) : 0, !!m[3]);
+  }
+  let best: Element | null = null;
+  for (const el of card.querySelectorAll<HTMLElement>('*')) {
+    const t = (el.textContent || '').trim();
+    if (t.length > 0 && t.length < 10 && /^\d{1,3}:\d{2}(?::\d{2})?$/.test(t)) {
+      if (!best || t.length < (best.textContent || '').trim().length) best = el;
+    }
+  }
+  if (best) {
+    const m = (best.textContent || '').trim().match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
+    if (m) return timecodeToSeconds(parseInt(m[1], 10), parseInt(m[2], 10), m[3] ? parseInt(m[3], 10) : 0, !!m[3]);
+  }
+  return null;
 }
 
 function isPortraitThumb(card: Element): boolean {
@@ -465,9 +478,15 @@ function isPortraitThumb(card: Element): boolean {
 function isShortItem(href: string, card: Element): boolean {
   if (/\/shorts\//.test(href)) return true;
   if (card.tagName.toLowerCase() === 'ytm-shorts-lockup-view-model') return true;
+  const badge = card.querySelector('ytd-badge-supported-renderer, [class*="badge"], [class*="chip"]');
+  if (badge && (badge.textContent || '').trim().toLowerCase() === 'shorts') return true;
   const dur = cardDurationSeconds(card);
-  if (dur !== null && dur <= 180 && isPortraitThumb(card)) return true;
-  return false;
+  if (dur !== null && dur > 180) return false;
+  if (dur !== null && dur <= 180) return true;
+  const txt = (card.textContent || '').toLowerCase();
+  if (/(#shorts\b|#short\b)/.test(txt)) return true;
+  if (isPortraitThumb(card)) return true;
+  return true;
 }
 
 interface SectionItem {
@@ -484,7 +503,11 @@ function collectSectionItemsIn(section: Element): SectionItem[] {
     const href = a.getAttribute('href') || '';
     const m = href.match(/\/shorts\/([\w-]{11})/) || href.match(/[?&]v=([\w-]{11})/);
     if (!m) return;
-    const titleLink = card.querySelector<HTMLElement>('a#video-title, a#video-title-link, h3 a, #video-title');
+    const anchors = Array.from(card.querySelectorAll<HTMLElement>('a'));
+    const titleLink = anchors.find(x => {
+      const t = (x.textContent || '').trim();
+      return t.length > 3 && !/^\d{1,3}:\d{2}(?::\d{2})?$/.test(t);
+    }) || anchors.find(x => (x.getAttribute('id') || '').includes('video-title')) || null;
     out.push({ card, link: titleLink || a, href, videoId: m[1], short: isShortItem(href, card) });
   };
   section.querySelectorAll<HTMLElement>('a[href*="/shorts/"]').forEach(a => push(a, findEntryRoot(a) || a));
@@ -655,9 +678,29 @@ function findMenuButton(root: Element): HTMLElement | null {
   );
 }
 
-function findEntryRootByVideoId(videoId: string): Element | null {
-  const link = document.querySelector(`a[href*="/shorts/${videoId}"], a[href*="v=${videoId}"]`);
-  return link ? findEntryRoot(link) : null;
+function menuButtonShadow(root: Element): HTMLElement | null {
+  const mr = deepCollect(root, 'ytd-menu-renderer, ytm-menu-popup-renderer')[0];
+  if (!mr) return null;
+  const sr = (mr as Element & { shadowRoot?: ShadowRoot | null }).shadowRoot;
+  if (!sr) return null;
+  return deepFind(sr, 'button, [role="button"], tp-yt-paper-icon-button, yt-icon-button, [class*="button"]') as HTMLElement | null;
+}
+
+function locateCardForMenu(videoId: string): { card: Element | null; btn: HTMLElement | null } {
+  const link = document.querySelector(`#contents a[href*="/shorts/${videoId}"], #contents a[href*="v=${videoId}"]`);
+  if (!link) return { card: null, btn: null };
+
+  let n: Element | null = link as Element;
+  while (n && n !== document.body) {
+    const links = n.querySelectorAll('a[href*="/watch?v="], a[href*="/shorts/"]');
+    if (links.length >= 1 && links.length <= 4) {
+      const root = findEntryRoot(n) || n;
+      const btn = findMenuButton(root) || menuButtonShadow(root);
+      if (btn) return { card: root, btn };
+    }
+    n = n.parentElement;
+  }
+  return { card: null, btn: null };
 }
 
 const deleteLog: string[] = [];
@@ -691,15 +734,27 @@ function findRemoveOption(): HTMLElement | null {
 }
 
 async function removeWatchHistoryItem(videoId: string, cardEl: HTMLElement | null): Promise<boolean> {
-  let root = cardEl && cardEl.isConnected ? cardEl : findEntryRootByVideoId(videoId);
+  let root = cardEl && cardEl.isConnected ? cardEl : null;
+  let menuBtn = root ? findMenuButton(root) : null;
+
+  if (!root || !menuBtn) {
+    const located = locateCardForMenu(videoId);
+    if (located.btn) {
+      if (located.card) root = located.card as HTMLElement;
+      menuBtn = located.btn;
+    }
+  }
+
   if (!root) {
     logDelete(`[${videoId}] card not found`);
     return false;
   }
-
-  const menuBtn = findMenuButton(root);
   if (!menuBtn) {
-    logDelete(`[${videoId}] no "More actions" button found`);
+    const menus = Array.from(root.querySelectorAll('ytd-menu-renderer, ytm-menu-popup-renderer, [class*="menu"]'))
+      .map(e => (e.getAttribute('aria-label') || (e.textContent || '').trim().slice(0, 20)))
+      .filter(Boolean)
+      .slice(0, 4);
+    logDelete(`[${videoId}] no "More actions" button found. card=${root.tagName} menus=${JSON.stringify(menus)}`);
     return false;
   }
 
@@ -930,6 +985,20 @@ function buildDebugDump(samples: string[], inRange?: ScannedItem[]): string {
     lines.push('first watch?v section: ' + (sec ? sec.tagName : 'null'));
     lines.push('first watch?v sectionDateHint: ' + (sec ? (sectionDateHint(sec) ? sectionDateHint(sec)!.toISOString().slice(0, 10) : '?') : '?'));
     lines.push('first watch?v html head: ' + (card ? card.outerHTML.replace(/\s+/g, ' ').slice(0, 250) : 'none'));
+  } else {
+    lines.push('--- watch?v card details (section-scoped) ---');
+    let printed = 0;
+    $$('#contents ytd-item-section-renderer, #contents ytm-item-section-renderer').forEach(s => {
+      if (printed >= 2) return;
+      const v = s.querySelector('a[href*="/watch?v="]');
+      if (!v) return;
+      const card = findEntryRoot(v) || v;
+      printed++;
+      const head = ((s as HTMLElement).innerText || '').split('\n').map(x => x.trim()).filter(Boolean)[0] || '?';
+      lines.push(`sec="${head.slice(0, 25)}" card=${card.tagName} dur=${cardDurationSeconds(card)} href=${(v.getAttribute('href') || '').slice(0, 30)}`);
+      lines.push(`  title=${(card.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120)}`);
+      lines.push(`  html=${card.outerHTML.replace(/\s+/g, ' ').slice(0, 400)}`);
+    });
   }
 
   const firstShort = document.querySelector('#contents a[href*="/shorts/"]');
@@ -973,7 +1042,8 @@ function buildDebugDump(samples: string[], inRange?: ScannedItem[]): string {
     lines.push(`--- in-range (${inRange.length}) ---`);
     inRange.slice(0, 30).forEach((it, i) => {
       const d = it.watchedAt ? it.watchedAt.toISOString().slice(0, 10) : '?';
-      lines.push(`  ${i + 1}. [${it.isShort ? 'S' : 'V'}] ${d} ${it.title.slice(0, 50)}`);
+      const dur = it.el ? cardDurationSeconds(it.el) : null;
+      lines.push(`  ${i + 1}. [${it.isShort ? 'S' : 'V'}] ${d} ${dur !== null ? dur + 's' : '?'} ${(it.href || '').slice(0, 35)} ${it.title.slice(0, 40)}`);
     });
   }
 
@@ -1068,6 +1138,10 @@ async function runDelete() {
     ? 'Debug: ' + deleteLog.slice(0, 5).join(' | ')
     : '';
   console.log('[YTS-Cleaner] delete log:', JSON.stringify(deleteLog, null, 2));
+
+  el('ytsc-done-label').textContent += ' Refreshing page…';
+  await wait(2000);
+  window.location.reload();
 }
 
 function init() {
