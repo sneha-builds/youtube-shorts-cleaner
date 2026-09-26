@@ -60,6 +60,29 @@ const STYLES = `
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
+#ytsc-overlay .ytsc-mode {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+#ytsc-overlay .ytsc-mode-btn {
+  padding: 7px 4px;
+  background: #2d2d44;
+  border: 1px solid #3d3d54;
+  border-radius: 8px;
+  color: #a0a0a0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+#ytsc-overlay .ytsc-mode-btn:hover { background: #3d3d54; color: #fff; }
+#ytsc-overlay .ytsc-mode-btn.active {
+  background: #ff4757;
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
 #ytsc-overlay .ytsc-btn {
   padding: 9px 4px;
   background: #2d2d44;
@@ -183,13 +206,18 @@ const STYLES = `
 }
 `;
 
-interface ScannedShort {
+interface ScannedItem {
   videoId: string;
   title: string;
   thumbnail: string;
   watchedAt: Date | null;
   range: 'in' | 'out' | 'unknown';
+  isShort: boolean;
+  href: string;
+  el: HTMLElement | null;
 }
+
+type Mode = 'shorts' | 'videos' | 'all';
 
 interface DateRange {
   start: Date;
@@ -197,6 +225,11 @@ interface DateRange {
 }
 
 let overlay: HTMLElement | null = null;
+let currentMode: Mode = 'shorts';
+
+function modeNoun(): string {
+  return currentMode === 'shorts' ? 'Shorts' : currentMode === 'videos' ? 'Videos' : 'items';
+}
 
 function wait(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -368,22 +401,6 @@ function getThumbnail(root: Element): string {
   return src.startsWith('http') ? src : '';
 }
 
-function isShortLike(href: string, root: Element): boolean {
-  if (/\/shorts\//.test(href)) return true;
-  const labels: string[] = [];
-  root.querySelectorAll('img').forEach(img => {
-    const alt = img.getAttribute('alt') || '';
-    if (alt) labels.push(alt);
-    const h = img.getAttribute('href') || '';
-    if (h) labels.push(h);
-  });
-  root.querySelectorAll('[aria-label]').forEach(n => {
-    const a = n.getAttribute('aria-label') || '';
-    if (a) labels.push(a);
-  });
-  return labels.some(l => /\bshorts?\b/i.test(l));
-}
-
 function findEntryRoot(link: Element): Element | null {
   let el: Element | null = link;
   while (el && el !== document.body) {
@@ -407,6 +424,7 @@ function findTitleLinks(): Element[] {
   $$('#contents a#video-title').forEach(l => links.add(l));
   $$('#contents a#video-title-link').forEach(l => links.add(l));
   $$('#contents a[href*="/shorts/"]').forEach(l => links.add(l));
+  $$('#contents a[href*="/watch?v="]').forEach(l => links.add(l));
   $$('#contents ytd-video-renderer #dismissible h3 a').forEach(l => links.add(l));
   $$('#contents ytd-grid-video-renderer a').forEach(l => {
     if ((l.getAttribute('href') || '').includes('/shorts/')) links.add(l);
@@ -414,55 +432,137 @@ function findTitleLinks(): Element[] {
   return Array.from(links);
 }
 
-function scanShorts(r: DateRange): { inRange: ScannedShort[]; skipped: number; samples: string[] } {
+function cardDurationSeconds(card: Element): number | null {
+  const el = card.querySelector('ytd-thumbnail-overlay-time-status-renderer, [class*="time-status"], span[class*="badge"]') as HTMLElement | null;
+  const src = (el ? el.textContent : '') || (card.textContent || '');
+  const m = src.match(/\b(\d{1,3}):(\d{2})(?::(\d{2}))?\b/);
+  if (!m) return null;
+  const a = parseInt(m[1], 10);
+  const b = parseInt(m[2], 10);
+  const c = m[3] ? parseInt(m[3], 10) : 0;
+  const hasHours = !!m[3] || a >= 10;
+  return hasHours ? a * 3600 + b * 60 + c : a * 60 + b;
+}
+
+function isPortraitThumb(card: Element): boolean {
+  const img = card.querySelector<HTMLImageElement>('img#img, img.yt-core-image');
+  const pairs: Array<[number, number]> = [];
+  if (img) {
+    if (img.width && img.height) pairs.push([img.width, img.height]);
+    const aw = parseInt(img.getAttribute('width') || '0', 10);
+    const ah = parseInt(img.getAttribute('height') || '0', 10);
+    if (aw && ah) pairs.push([aw, ah]);
+  }
+  if (pairs.some(([w, h]) => h > w)) return true;
+  const tn = card.querySelector('ytd-thumbnail');
+  if (tn) {
+    const st = ((tn as HTMLElement).getAttribute('style') || '') + ' ' + tn.className.toString();
+    if (/aspect-ratio\s*:\s*9\s*\/\s*16|\bwin%-\d{2,3}x\d{2,3}\b|portrait/i.test(st)) return true;
+  }
+  return false;
+}
+
+function isShortItem(href: string, card: Element): boolean {
+  if (/\/shorts\//.test(href)) return true;
+  if (card.tagName.toLowerCase() === 'ytm-shorts-lockup-view-model') return true;
+  const dur = cardDurationSeconds(card);
+  if (dur !== null && dur <= 180 && isPortraitThumb(card)) return true;
+  return false;
+}
+
+interface SectionItem {
+  card: Element;
+  link: Element;
+  href: string;
+  videoId: string;
+  short: boolean;
+}
+
+function collectSectionItemsIn(section: Element): SectionItem[] {
+  const out: SectionItem[] = [];
+  const push = (a: Element, card: Element) => {
+    const href = a.getAttribute('href') || '';
+    const m = href.match(/\/shorts\/([\w-]{11})/) || href.match(/[?&]v=([\w-]{11})/);
+    if (!m) return;
+    const titleLink = card.querySelector<HTMLElement>('a#video-title, a#video-title-link, h3 a, #video-title');
+    out.push({ card, link: titleLink || a, href, videoId: m[1], short: isShortItem(href, card) });
+  };
+  section.querySelectorAll<HTMLElement>('a[href*="/shorts/"]').forEach(a => push(a, findEntryRoot(a) || a));
+  section.querySelectorAll<HTMLElement>('a[href*="/watch?v="]').forEach(a => push(a, findEntryRoot(a) || a));
+  return out;
+}
+
+function collectSectionItems(): SectionItem[] {
+  return $$('#contents ytd-item-section-renderer, #contents ytm-item-section-renderer').flatMap(s => collectSectionItemsIn(s));
+}
+
+function countMatches(mode: Mode): number {
   const seen = new Set<string>();
-  const inRange: ScannedShort[] = [];
+  let n = 0;
+  for (const it of collectSectionItems()) {
+    if (seen.has(it.videoId)) continue;
+    if (mode === 'shorts' && !it.short) continue;
+    if (mode === 'videos' && it.short) continue;
+    seen.add(it.videoId);
+    n++;
+  }
+  return n;
+}
+
+function scanItems(r: DateRange, mode: Mode): { inRange: ScannedItem[]; skipped: number; samples: string[] } {
+  const seen = new Set<string>();
+  const inRange: ScannedItem[] = [];
   let skipped = 0;
   const samples: string[] = [];
 
-  const links = findTitleLinks();
+  const sections = $$('#contents ytd-item-section-renderer, #contents ytm-item-section-renderer');
 
-  links.forEach(link => {
-    const root = findEntryRoot(link);
-    if (!root) return;
+  for (const section of sections) {
+    const sectionDate = sectionDateHint(section);
+    for (const it of collectSectionItemsIn(section)) {
+      if (seen.has(it.videoId)) continue;
+      if (mode === 'shorts' && !it.short) continue;
+      if (mode === 'videos' && it.short) continue;
+      seen.add(it.videoId);
 
-    const href = link.getAttribute('href') || '';
-    const idMatch = href.match(/\/shorts\/([\w-]{11})/) || href.match(/[?&]v=([\w-]{11})/);
-    const videoId = idMatch ? idMatch[1] : '';
+      const cardText = (it.card.textContent || '').replace(/\s+/g, ' ').trim();
+      const cardDate = parseRelativeTime(cardText);
+      const watchedAt = cardDate || sectionDate;
 
-    if (!videoId || seen.has(videoId)) return;
-    if (!isShortLike(href, root)) return;
-    seen.add(videoId);
+      let range: 'in' | 'out' | 'unknown' = 'unknown';
+      if (watchedAt) {
+        range = watchedAt >= r.start && watchedAt <= r.end ? 'in' : 'out';
+      }
 
-    const watchedAt = parseRelativeTime(root.textContent || '') || sectionDateHint(root);
-
-    let range: 'in' | 'out' | 'unknown' = 'unknown';
-    if (watchedAt) {
-      range = watchedAt >= r.start && watchedAt <= r.end ? 'in' : 'out';
-    }
-
-    if (range === 'in') {
-      inRange.push({
-        videoId,
-        title: link.getAttribute('title') || link.textContent?.trim() || root.textContent?.trim().slice(0, 80) || 'Short',
-        thumbnail: getThumbnail(root),
-        watchedAt,
-        range
-      });
-    } else if (range === 'unknown') {
-      skipped++;
-      if (samples.length < 5 && !watchedAt) {
-        samples.push((root.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300));
+      if (range === 'in') {
+        inRange.push({
+          videoId: it.videoId,
+          title: it.link.getAttribute('title') || it.link.textContent?.trim() || cardText.slice(0, 80) || (it.short ? 'Short' : 'Video'),
+          thumbnail: getThumbnail(it.card),
+          watchedAt,
+          range,
+          isShort: it.short,
+          href: it.href,
+          el: it.card as HTMLElement
+        });
+      } else if (range === 'unknown') {
+        skipped++;
+        if (samples.length < 5 && !watchedAt) {
+          samples.push(cardText.slice(0, 300));
+        }
       }
     }
-  });
+  }
 
   return { inRange, skipped, samples };
 }
 
-async function autoScrollShelves(onProgress: (found: number) => void): Promise<void> {
+async function autoScrollShelves(onProgress: (found: number) => void, mode: Mode, r: DateRange): Promise<void> {
   const shelves = $$('yt-horizontal-list-renderer');
   for (const shelf of shelves) {
+    const anchor = shelf.querySelector('a[href*="/shorts/"]') || shelf;
+    const d = sectionDateHint(anchor);
+    if (d && d.getTime() < r.start.getTime()) continue;
     const scroller = (
       shelf.querySelector('#scroll-container') ||
       shelf.querySelector('#items') ||
@@ -477,35 +577,49 @@ async function autoScrollShelves(onProgress: (found: number) => void): Promise<v
         const arrow = shelf.querySelector('#right-arrow button, [aria-label="Next"]') as HTMLElement | null;
         if (arrow) arrow.click();
       } catch (e) { /* ignore */ }
-      await wait(1000);
+      await wait(700);
       const after = shelf.querySelectorAll('a[href*="/shorts/"]').length;
-      onProgress(findTitleLinks().filter(l => isShortLike(l.getAttribute('href') || '', l)).length);
+      onProgress(countMatches(mode));
       if (after === before) { stall++; if (stall >= 3) break; } else stall = 0;
     }
   }
 }
 
-async function autoScroll(onProgress: (found: number) => void): Promise<number> {
-  const MAX_SCROLLS = 35;
+function sectionDates(): Date[] {
+  return $$('#contents ytd-item-section-renderer, #contents ytm-item-section-renderer')
+    .map(s => sectionDateHint(s))
+    .filter((d): d is Date => !!d);
+}
+
+function enoughLoaded(r: DateRange): boolean {
+  const ds = sectionDates();
+  if (!ds.length) return false;
+  let min = Infinity;
+  for (const d of ds) if (d.getTime() < min) min = d.getTime();
+  return min <= r.start.getTime();
+}
+
+async function autoScroll(onProgress: (found: number) => void, mode: Mode, r: DateRange): Promise<number> {
   let lastCount = -1;
   let stallCount = 0;
   let found = 0;
 
-  // Phase 1: vertical scroll to load day sections
-  for (let i = 0; i < MAX_SCROLLS; i++) {
+  // Phase 1: vertical scroll to load day sections — but only as far as the range needs
+  for (let i = 0; i < 35; i++) {
     window.scrollTo(0, document.body.scrollHeight);
-    await wait(1800);
+    await wait(1200);
 
-    found = findTitleLinks().filter(l => isShortLike(l.getAttribute('href') || '', l)).length;
+    found = countMatches(mode);
     onProgress(found);
+    if (enoughLoaded(r)) break;
     if (found === lastCount) { stallCount++; if (stallCount >= 3) break; } else stallCount = 0;
     lastCount = found;
   }
 
-  // Phase 2: horizontal scroll on each reel shelf to load all shorts
-  await autoScrollShelves(onProgress);
+  // Phase 2: horizontal scroll on each in-range reel shelf to load all shorts
+  if (mode !== 'videos') await autoScrollShelves(onProgress, mode, r);
 
-  found = findTitleLinks().filter(l => isShortLike(l.getAttribute('href') || '', l)).length;
+  found = countMatches(mode);
   return found;
 }
 
@@ -537,7 +651,7 @@ function deepCollect(root: ParentNode, sel: string): Element[] {
 function findMenuButton(root: Element): HTMLElement | null {
   return deepFind(
     root,
-    'button[aria-label*="More actions"], [aria-label="More actions" i], ytd-menu-renderer button, ytd-menu-renderer #top-level-button'
+    'button[aria-label*="More actions"], [aria-label="More actions" i], ytd-menu-renderer button, ytd-menu-renderer #top-level-button, [aria-label*="Action menu" i], button[aria-label*="Action menu"]'
   );
 }
 
@@ -576,8 +690,8 @@ function findRemoveOption(): HTMLElement | null {
   return best;
 }
 
-async function removeWatchHistoryItem(videoId: string): Promise<boolean> {
-  const root = findEntryRootByVideoId(videoId);
+async function removeWatchHistoryItem(videoId: string, cardEl: HTMLElement | null): Promise<boolean> {
+  let root = cardEl && cardEl.isConnected ? cardEl : findEntryRootByVideoId(videoId);
   if (!root) {
     logDelete(`[${videoId}] card not found`);
     return false;
@@ -642,7 +756,7 @@ function on(title: string) {
   el('ytsc-msg').textContent = '';
   el('ytsc-warn').textContent = '';
   el('ytsc-list').innerHTML = '';
-  el('ytsc-delete-label').textContent = 'Delete Shorts';
+  el('ytsc-delete-label').textContent = 'Delete ' + modeNoun();
   el('ytsc-title').textContent = title;
 }
 
@@ -694,7 +808,12 @@ function buildOverlay(): void {
     </div>
 
     <div class="ytsc-card" data-card="ready">
-      <div class="ytsc-label">Delete Shorts watched…</div>
+      <div class="ytsc-label" id="ytsc-mode-label">Delete items watched…</div>
+      <div class="ytsc-mode">
+        <button class="ytsc-mode-btn active" data-mode="shorts">Shorts</button>
+        <button class="ytsc-mode-btn" data-mode="videos">Videos</button>
+        <button class="ytsc-mode-btn" data-mode="all">All</button>
+      </div>
       <div class="ytsc-dates">
         <button class="ytsc-btn" data-days="0">Today</button>
         <button class="ytsc-btn" data-days="1">Yesterday</button>
@@ -741,6 +860,17 @@ function buildOverlay(): void {
   el('ytsc-close').addEventListener('click', () => overlay?.remove());
   el('ytsc-close-done').addEventListener('click', () => overlay?.remove());
 
+  overlay.querySelectorAll('.ytsc-mode .ytsc-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentMode = (btn as HTMLElement).dataset.mode as Mode;
+      overlay!.querySelectorAll('.ytsc-mode .ytsc-mode-btn').forEach(b =>
+        b.classList.toggle('active', b === btn)
+      );
+      el('ytsc-mode-label').textContent = 'Delete items watched…';
+      on('Pick a date range');
+    });
+  });
+
   overlay.querySelectorAll('.ytsc-dates .ytsc-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const days = parseInt((btn as HTMLElement).dataset.days || '0', 10);
@@ -755,12 +885,52 @@ function buildOverlay(): void {
   });
 }
 
-let pendingTargets: ScannedShort[] = [];
+let pendingTargets: ScannedItem[] = [];
 
-function buildDebugDump(samples: string[]): string {
+function buildDebugDump(samples: string[], inRange?: ScannedItem[]): string {
   const lines: string[] = [];
   lines.push('URL: ' + window.location.href);
-  lines.push('ytd-video-renderer count: ' + document.querySelectorAll('#contents ytd-video-renderer').length);
+  lines.push('mode: ' + currentMode);
+  const vrs = document.querySelectorAll('#contents ytd-video-renderer');
+  lines.push('ytd-video-renderer count: ' + vrs.length);
+  if (vrs.length) {
+    const vr = vrs[0];
+    const links = Array.from(vr.querySelectorAll('a'))
+      .slice(0, 5)
+      .map(a => (a.getAttribute('href') || '').slice(0, 60))
+      .filter(Boolean);
+    lines.push('vr#1 connected: ' + vr.isConnected);
+    lines.push('vr#1 in template: ' + !!vr.closest('template'));
+    lines.push('vr#1 links: ' + JSON.stringify(links));
+    lines.push('vr#1 html head: ' + vr.outerHTML.replace(/\s+/g, ' ').slice(0, 250));
+  } else {
+    lines.push('ytd-video-renderer (anywhere): ' + document.querySelectorAll('ytd-video-renderer').length);
+  }
+
+  const allLinks = findTitleLinks();
+  lines.push('total title links: ' + allLinks.length);
+  lines.push('short links: ' + allLinks.filter(l => (l.getAttribute('href') || '').includes('/shorts/')).length);
+  lines.push('video links: ' + allLinks.filter(l => !!l.getAttribute('href') && /[?&]v=/.test(l.getAttribute('href') || '') && !(l.getAttribute('href') || '').includes('/shorts/')).length);
+
+  lines.push('--- per-section counts ---');
+  $$('#contents ytd-item-section-renderer, #contents ytm-item-section-renderer').forEach((s, i) => {
+    if (i >= 18) return;
+    const head = ((s as HTMLElement).innerText || '').split('\n').map(x => x.trim()).filter(Boolean)[0] || '?';
+    const d = sectionDateHint(s);
+    lines.push(
+      `  ${i + 1}. header="${head.slice(0, 30)}" date=${d ? d.toISOString().slice(0, 10) : '?'} shorts=${s.querySelectorAll('a[href*="/shorts/"]').length} videos=${s.querySelectorAll('a[href*="/watch?v="]').length}`
+    );
+  });
+
+  const firstWatch = document.querySelector('#contents a[href*="/watch?v="]');
+  if (firstWatch) {
+    const card = findEntryRoot(firstWatch);
+    const sec = card ? findSection(card) : null;
+    lines.push('first watch?v card: ' + (card ? card.tagName : 'null'));
+    lines.push('first watch?v section: ' + (sec ? sec.tagName : 'null'));
+    lines.push('first watch?v sectionDateHint: ' + (sec ? (sectionDateHint(sec) ? sectionDateHint(sec)!.toISOString().slice(0, 10) : '?') : '?'));
+    lines.push('first watch?v html head: ' + (card ? card.outerHTML.replace(/\s+/g, ' ').slice(0, 250) : 'none'));
+  }
 
   const firstShort = document.querySelector('#contents a[href*="/shorts/"]');
   if (firstShort) {
@@ -798,35 +968,45 @@ function buildDebugDump(samples: string[]): string {
   lines.push('section headers: ' + JSON.stringify(headers));
 
   samples.forEach((s, i) => lines.push(`sample ${i}: ${s}`));
+
+  if (inRange && inRange.length) {
+    lines.push(`--- in-range (${inRange.length}) ---`);
+    inRange.slice(0, 30).forEach((it, i) => {
+      const d = it.watchedAt ? it.watchedAt.toISOString().slice(0, 10) : '?';
+      lines.push(`  ${i + 1}. [${it.isShort ? 'S' : 'V'}] ${d} ${it.title.slice(0, 50)}`);
+    });
+  }
+
   return lines.join('\n');
 }
 
 async function runScan(days: number) {
   showCard('ready');
   showProgress(true, `Loading your history… (detected so far: 0)`);
-  let firstStall = false;
+  const r = getRange(days);
 
   const found = await autoScroll(n => {
     el('ytsc-progress-text').textContent = `Loading your history… (detected so far: ${n})`;
-  });
+  }, currentMode, r);
 
   showProgress(true, 'Analyzing watched dates…');
-  const r = getRange(days);
-  const { inRange, skipped, samples } = scanShorts(r);
+  const { inRange, skipped, samples } = scanItems(r, currentMode);
 
   pendingTargets = inRange;
 
-  const warnBase = `${skipped} Short(s) found but their watch date couldn't be read — skipped to avoid deleting outside your range.`;
-  const debugText = buildDebugDump(samples);
+  const noun = modeNoun();
+  const cap = noun.charAt(0).toUpperCase() + noun.slice(1);
+  const warnBase = `${skipped} ${noun} found but their watch date couldn't be read — skipped to avoid deleting outside your range.`;
+  const debugText = buildDebugDump(samples, inRange);
 
   if (inRange.length === 0) {
     showCard('results');
     el('ytsc-count-big').textContent = '0';
-    el('ytsc-range-label').textContent = `No Shorts found in ${rangeLabel(days)}`;
+    el('ytsc-range-label').textContent = `No ${noun} found in ${rangeLabel(days)}`;
     el('ytsc-list').innerHTML = '';
     el('ytsc-warn').textContent = skipped > 0 ? warnBase : '';
     el('ytsc-delete-btn').style.display = 'none';
-    el('ytsc-debug').classList.toggle('show', skipped > 0);
+    el('ytsc-debug').classList.toggle('show', true);
     el('ytsc-debug-text').textContent = debugText;
     console.log('[YTS-Cleaner] DEBUG DUMPS:\n' + debugText);
     return;
@@ -834,7 +1014,13 @@ async function runScan(days: number) {
 
   showCard('results');
   el('ytsc-count-big').textContent = inRange.length.toString();
-  el('ytsc-range-label').textContent = `Shorts watched ${rangeLabel(days)} (found ${found} total in loaded history)`;
+  let label = `${cap} watched ${rangeLabel(days)} (found ${found} total in loaded history)`;
+  if (currentMode === 'all') {
+    const s = inRange.filter(x => x.isShort).length;
+    const v = inRange.length - s;
+    label += `<span style="display:block;margin-top:4px;color:#ff4757">${s} Shorts · ${v} Videos</span>`;
+  }
+  el('ytsc-range-label').innerHTML = label;
   el('ytsc-delete-btn').style.display = 'block';
   el('ytsc-delete-label');
 
@@ -846,7 +1032,7 @@ async function runScan(days: number) {
   `).join('');
 
   el('ytsc-warn').textContent = skipped > 0 ? warnBase : '';
-  el('ytsc-debug').classList.toggle('show', skipped > 0);
+  el('ytsc-debug').classList.toggle('show', true);
   el('ytsc-debug-text').textContent = debugText;
 
   showProgress(false, '');
@@ -866,7 +1052,7 @@ async function runDelete() {
 
   for (const t of pendingTargets) {
     attempted++;
-    const ok = await removeWatchHistoryItem(t.videoId);
+    const ok = await removeWatchHistoryItem(t.videoId, t.el);
     if (ok) success++;
     else failed++;
     el('ytsc-deleting-text').textContent = `Deleting… ${attempted} / ${pendingTargets.length}`;
@@ -876,8 +1062,8 @@ async function runDelete() {
   showCard('done');
   el('ytsc-done-count').textContent = success.toString();
   el('ytsc-done-label').textContent = failed > 0
-    ? `Deleted ${success} Shorts · ${failed} could not be removed`
-    : `Deleted ${success} Shorts from your history!`;
+    ? `Deleted ${success} ${modeNoun()} · ${failed} could not be removed`
+    : `Deleted ${success} ${modeNoun()} from your history!`;
   el('ytsc-done-warn').textContent = failed > 0
     ? 'Debug: ' + deleteLog.slice(0, 5).join(' | ')
     : '';
