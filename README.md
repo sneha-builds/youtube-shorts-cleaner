@@ -1,4 +1,4 @@
-# YouTube Shorts Cleaner
+# YouTube Shorts / Videos Cleaner
 
 A Chrome extension (Manifest V3) that deletes watched **YouTube Shorts** from your watch history by date range — automatically, in bulk.
 
