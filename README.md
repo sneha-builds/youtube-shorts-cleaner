@@ -9,7 +9,7 @@ A Chrome extension (Manifest V3) that deletes watched **YouTube Shorts / Videos*
 - Reads the watch date of each Short from its section header ("Today", "Saturday", "7 Sept", …)
 - Shows a count with titles **before** anything is deleted
 - On confirm, clicks "Remove from watch history" on each matching Short, one by one, with a live progress counter
-
+   
 **No Google Cloud setup, no API keys, no OAuth, no background worker.** Everything runs locally in your browser.  
 
 ## How it works
