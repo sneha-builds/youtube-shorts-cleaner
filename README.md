@@ -33,7 +33,7 @@ The UI lives **on the YouTube history page**. When you open `youtube.com/feed/hi
 
 ## Install
 
-1. Open Chrome → `chrome://extensions/`
+1. Open Chrome → `chrome://extensions/`  
 2. Enable **Developer mode**
 3. Click **Load unpacked** → select the `youtube-shorts-cleaner` folder
 4. Make sure you're **signed into YouTube**
