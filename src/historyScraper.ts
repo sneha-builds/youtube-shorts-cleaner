@@ -8,15 +8,15 @@ const STYLES = `
   width: 340px;
   max-height: 85vh;
   overflow-y: auto;
-  background: #16162b;
-  border: 1px solid #333354;
-  border-radius: 12px;
-  color: #fff;
+  background: #ffffff;
+  border: 1px solid #e5e9f0;
+  border-radius: 18px;
+  color: #0f172a;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   z-index: 2147483646;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  padding: 16px;
+  box-shadow: 0 18px 44px rgba(15,23,42,0.18);
+  padding: 18px;
 }
 #ytsc-overlay *, #ytsc-overlay *::before, #ytsc-overlay *::after {
   box-sizing: border-box;
@@ -27,7 +27,7 @@ const STYLES = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 #ytsc-overlay .ytsc-title {
   display: flex;
@@ -35,24 +35,27 @@ const STYLES = `
   gap: 8px;
   font-size: 14px;
   font-weight: 700;
-  color: #ff4757;
+  color: #0f172a;
 }
 #ytsc-overlay .ytsc-title svg { flex-shrink: 0; }
 #ytsc-overlay .ytsc-close {
   background: none;
   border: none;
-  color: #888;
-  font-size: 18px;
+  color: #94a3b8;
+  font-size: 16px;
   cursor: pointer;
   line-height: 1;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
-#ytsc-overlay .ytsc-close:hover { color: #fff; background: #2d2d44; }
+#ytsc-overlay .ytsc-close:hover { color: #334155; background: #f1f5f9; }
 #ytsc-overlay .ytsc-section { margin-bottom: 10px; }
 #ytsc-overlay .ytsc-label {
-  font-size: 12px;
-  color: #a0a0a0;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 600;
   margin-bottom: 8px;
 }
 #ytsc-overlay .ytsc-dates {
@@ -64,59 +67,67 @@ const STYLES = `
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 #ytsc-overlay .ytsc-mode-btn {
-  padding: 7px 4px;
-  background: #2d2d44;
-  border: 1px solid #3d3d54;
-  border-radius: 8px;
-  color: #a0a0a0;
+  padding: 8px 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #64748b;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
   transition: all 0.15s ease;
 }
-#ytsc-overlay .ytsc-mode-btn:hover { background: #3d3d54; color: #fff; }
+#ytsc-overlay .ytsc-mode-btn:hover { background: #e2e8f0; color: #334155; }
 #ytsc-overlay .ytsc-mode-btn.active {
-  background: #ff4757;
-  border-color: transparent;
-  color: #fff;
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
   font-weight: 600;
 }
 #ytsc-overlay .ytsc-btn {
   padding: 9px 4px;
-  background: #2d2d44;
-  border: 1px solid #3d3d54;
-  border-radius: 8px;
-  color: #fff;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #334155;
   font-size: 12px;
   cursor: pointer;
+  font-family: inherit;
   transition: all 0.15s ease;
 }
-#ytsc-overlay .ytsc-btn:hover { background: #3d3d54; }
+#ytsc-overlay .ytsc-btn:hover { background: #f1f5f9; }
 #ytsc-overlay .ytsc-btn.ytsc-danger {
-  background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+  background: #ef4444;
   border-color: transparent;
-  font-weight: 600;
+  font-weight: 700;
   width: 100%;
   padding: 12px;
   font-size: 13px;
+  color: #fff;
   margin-top: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(239,68,68,0.35);
 }
-#ytsc-overlay .ytsc-btn.ytsc-danger:hover { box-shadow: 0 4px 12px rgba(255,71,87,0.4); }
+#ytsc-overlay .ytsc-btn.ytsc-danger:hover { background: #dc2626; box-shadow: 0 10px 24px rgba(239,68,68,0.45); }
 #ytsc-overlay .ytsc-btn.ytsc-ghost {
   background: none;
-  border: 1px solid #3d3d54;
-  color: #a0a0a0;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-weight: 600;
   width: 100%;
   padding: 10px;
   margin-top: 8px;
 }
+#ytsc-overlay .ytsc-btn.ytsc-ghost:hover { background: #f8fafc; color: #334155; }
 #ytsc-overlay .ytsc-progress {
   display: none;
   align-items: center;
   gap: 10px;
-  color: #a0a0a0;
+  color: #64748b;
   font-size: 12px;
   padding: 8px 0;
 }
@@ -124,38 +135,40 @@ const STYLES = `
 #ytsc-overlay .ytsc-spinner {
   width: 18px;
   height: 18px;
-  border: 3px solid #2d2d44;
-  border-top-color: #ff4757;
+  border: 3px solid #e2e8f0;
+  border-top-color: #ef4444;
   border-radius: 50%;
   animation: ytsc-spin 0.8s linear infinite;
   flex-shrink: 0;
 }
 @keyframes ytsc-spin { to { transform: rotate(360deg); } }
 #ytsc-overlay .ytsc-count-big {
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 800;
-  color: #ff4757;
+  letter-spacing: -1px;
+  color: #0f172a;
   text-align: center;
   margin-bottom: 4px;
 }
 #ytsc-overlay .ytsc-msg {
   margin-top: 8px;
   font-size: 13px;
-  color: #fff;
+  color: #0f172a;
   text-align: center;
 }
 #ytsc-overlay .ytsc-warn {
   margin-top: 6px;
   font-size: 11px;
-  color: #cca86a;
+  color: #b45309;
   text-align: center;
 }
 #ytsc-overlay .ytsc-list {
   margin-top: 10px;
   max-height: 180px;
   overflow-y: auto;
-  border: 1px solid #2d2d44;
-  border-radius: 6px;
+  border: 1px solid #e5e9f0;
+  background: #f8fafc;
+  border-radius: 10px;
   padding: 4px;
 }
 #ytsc-overlay .ytsc-item {
@@ -163,9 +176,9 @@ const STYLES = `
   align-items: center;
   gap: 8px;
   padding: 5px;
-  border-radius: 4px;
+  border-radius: 8px;
 }
-#ytsc-overlay .ytsc-item:hover { background: #2d2d44; }
+#ytsc-overlay .ytsc-item:hover { background: #f1f5f9; }
 #ytsc-overlay .ytsc-item img {
   width: 60px;
   height: 34px;
@@ -175,7 +188,7 @@ const STYLES = `
 }
 #ytsc-overlay .ytsc-item .ytsc-t {
   font-size: 11px;
-  color: #ddd;
+  color: #334155;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -187,9 +200,9 @@ const STYLES = `
 #ytsc-overlay .ytsc-debug {
   display: none;
   margin-top: 10px;
-  background: #0f0f20;
-  border: 1px solid #2d2d44;
-  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e5e9f0;
+  border-radius: 8px;
   padding: 8px;
   max-height: 200px;
   overflow: auto;
@@ -199,7 +212,7 @@ const STYLES = `
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 10px;
-  color: #9fc9ff;
+  color: #334155;
   font-family: monospace;
   margin: 0;
   line-height: 1.5;
@@ -854,7 +867,7 @@ function buildOverlay(): void {
     <div class="ytsc-head">
       <div class="ytsc-title" id="ytsc-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="5" width="20" height="14" rx="3" fill="#ff4757"/>
+          <rect x="2" y="5" width="20" height="14" rx="3" fill="#ef4444"/>
           <path d="M10 9l5 3-5 3V9z" fill="#fff"/>
         </svg>
         YouTube Shorts Cleaner

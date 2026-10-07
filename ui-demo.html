@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UI Theme Demo — YouTube Shorts Cleaner</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #202330;
+    color: #e5e7eb;
+    padding: 32px 24px 64px;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: #9aa0b5; font-size: 13px; margin-bottom: 28px; }
+  .sub b { color: #ff6b81; }
+
+  .themes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 32px;
+    align-items: start;
+  }
+  .theme { display: flex; flex-direction: column; gap: 18px; }
+
+  .theme-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .theme-label .num {
+    width: 24px; height: 24px;
+    border-radius: 8px;
+    background: #34384a;
+    display: grid; place-items: center;
+    font-size: 12px; color: #cbd0e0;
+  }
+  .theme-label small { color: #878da3; font-weight: 500; }
+
+  .mockup-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: relative;
+  }
+
+  p.caption { font-size: 11px; color: #6b7186; margin-top: 2px; }
+
+  .thumb { width: 60px; height: 34px; border-radius: 4px; object-fit: cover; background: linear-gradient(135deg,#3a3f55,#262a39); flex-shrink: 0; }
+
+  /* ================= THEME 1 — REDLINE ================= */
+  .t1 .overlay {
+    background: rgba(20, 20, 34, 0.88);
+    backdrop-filter: blur(14px);
+    border: 1px solid #33334f;
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    color: #fff;
+    font-size: 13px;
+    padding: 16px;
+    width: 340px;
+  }
+  .t1 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .t1 .title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: #fff; }
+  .t1 .logo { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg,#ff4757,#ff6b81); display: grid; place-items: center; }
+  .t1 .logo svg { width: 12px; height: 12px; fill: #fff; }
+  .t1 .close { border: none; background: none; color: #7a7a92; font-size: 16px; cursor: pointer; }
+  .t1 .label { font-size: 11px; color: #8f8fa8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .t1 .modes, .t1 .dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .t1 .chip { padding: 8px 4px; background: transparent; border: 1px solid #38385c; border-radius: 10px; color: #a5a5c0; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .t1 .chip.on { background: linear-gradient(135deg,#ff4757,#ff6b81); border-color: transparent; color: #fff; box-shadow: 0 6px 18px rgba(255,71,87,0.35); }
+  .t1 .dates { grid-template-columns: repeat(3, 1fr); }
+  .t1 .date { padding: 9px 4px; background: transparent; border: 1px solid #38385c; border-radius: 10px; color: #c6c6da; font-size: 12px; cursor: pointer; }
+  .t1 .date:first-child { grid-column: span 3; background: rgba(255,71,87,0.08); border-color: rgba(255,71,87,0.4); }
+  .t1 .count { font-size: 34px; font-weight: 800; text-align: center; color: #ff4757; margin-bottom: 2px; }
+  .t1 .range { text-align: center; font-size: 12px; color: #9aa0b5; margin-bottom: 12px; }
+  .t1 .list { margin: 10px 0 12px; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+  .t1 .item { display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 8px; }
+  .t1 .item:hover { background: rgba(255,255,255,0.06); }
+  .t1 .item .t { font-size: 11px; color: #d6d6e4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t1 .danger { width: 100%; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(135deg,#ff4757,#ff3838); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 8px 20px rgba(255,71,87,0.35); }
+  .t1 .ghost { width: 100%; padding: 9px; margin-top: 8px; background: none; border: 1px solid #38385c; border-radius: 10px; color: #a5a5c0; font-size: 12px; cursor: pointer; }
+  .t1.popup {
+    width: 320px; background: rgba(20,20,34,0.92); border: 1px solid #33334f; border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.5); padding: 20px; color: #fff;
+  }
+  .t1.popup h1 { font-size: 16px; font-weight: 700; color: #fff; }
+  .t1.popup h1 span { color: #ff4757; }
+  .t1.popup .sub { font-size: 12px; color: #8f8fa8; margin: 4px 0 14px; }
+  .t1.popup .steps { font-size: 12px; color: #c6c6da; line-height: 1.7; padding-left: 16px; margin-bottom: 14px; }
+  .t1.popup .btn { width: 100%; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(135deg,#ff4757,#ff6b81); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 8px 18px rgba(255,71,87,0.3); }
+  .t1.popup .note { margin-top: 12px; font-size: 11px; color: #7a7a92; text-align: center; }
+
+  /* ================= THEME 2 — MIDNIGHT GLASS ================= */
+  .t2 .overlay {
+    background: rgba(24, 24, 38, 0.55);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 13px;
+    padding: 16px;
+    width: 340px;
+  }
+  .t2 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .t2 .title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+  .t2 .logo { width: 20px; height: 20px; border-radius: 50%; background: conic-gradient(from 180deg,#22d3ee,#7c3aed,#f0abfc,#22d3ee); display: grid; place-items: center; }
+  .t2 .logo svg { width: 12px; height: 12px; fill: #fff; }
+  .t2 .close { border: none; background: none; color: rgba(255,255,255,0.5); font-size: 16px; cursor: pointer; }
+  .t2 .label { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .t2 .modes, .t2 .dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .t2 .chip { padding: 8px 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; font-weight: 600; font-family: inherit; }
+  .t2 .chip.on { background: linear-gradient(135deg,rgba(124,58,237,0.9),rgba(34,211,238,0.85)); border-color: transparent; color: #fff; box-shadow: 0 6px 22px rgba(124,58,237,0.45); }
+  .t2 .dates { grid-template-columns: repeat(3, 1fr); }
+  .t2 .date { padding: 9px 4px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; color: rgba(255,255,255,0.85); font-size: 12px; cursor: pointer; font-family: inherit; }
+  .t2 .date:first-child { grid-column: span 3; border-color: rgba(124,58,237,0.6); }
+  .t2 .count { font-size: 34px; font-weight: 800; text-align: center; background: linear-gradient(90deg,#a78bfa,#22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 2px; }
+  .t2 .range { text-align: center; font-size: 12px; color: rgba(255,255,255,0.55); margin-bottom: 12px; }
+  .t2 .list { margin: 10px 0 12px; display: flex; flex-direction: column; gap: 2px; }
+  .t2 .item { display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 10px; }
+  .t2 .item:hover { background: rgba(255,255,255,0.1); }
+  .t2 .item .t { font-size: 11px; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t2 .danger { width: 100%; padding: 12px; border: none; border-radius: 14px; background: linear-gradient(135deg,#7c3aed,#22d3ee); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 8px 24px rgba(124,58,237,0.4); }
+  .t2 .ghost { width: 100%; padding: 9px; margin-top: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; font-family: inherit; }
+  .t2.popup {
+    width: 320px; background: rgba(24,24,38,0.55); backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px; box-shadow: 0 16px 44px rgba(0,0,0,0.55); padding: 20px; color: #fff;
+  }
+  .t2.popup h1 { font-size: 16px; font-weight: 700; }
+  .t2.popup h1 span { background: linear-gradient(90deg,#a78bfa,#22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .t2.popup .sub { font-size: 12px; color: rgba(255,255,255,0.5); margin: 4px 0 14px; }
+  .t2.popup .steps { font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.7; padding-left: 16px; margin-bottom: 14px; }
+  .t2.popup .btn { width: 100%; padding: 12px; border: none; border-radius: 14px; background: linear-gradient(135deg,#7c3aed,#22d3ee); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
+  .t2.popup .note { margin-top: 12px; font-size: 11px; color: rgba(255,255,255,0.4); text-align: center; }
+
+  /* ================= THEME 3 — SLATE LIGHT ================= */
+  .t3 .overlay {
+    background: #ffffff;
+    border: 1px solid #e5e9f0;
+    border-radius: 18px;
+    box-shadow: 0 18px 44px rgba(15,23,42,0.18);
+    color: #0f172a;
+    font-size: 13px;
+    padding: 18px;
+    width: 340px;
+  }
+  .t3 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .t3 .title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: #0f172a; }
+  .t3 .logo { width: 20px; height: 20px; border-radius: 6px; background: #ef4444; display: grid; place-items: center; }
+  .t3 .logo svg { width: 12px; height: 12px; fill: #fff; }
+  .t3 .close { border: none; background: none; color: #94a3b8; font-size: 16px; cursor: pointer; }
+  .t3 .label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600; }
+  .t3 .modes, .t3 .dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .t3 .chip { padding: 8px 4px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; color: #64748b; font-size: 12px; cursor: pointer; font-weight: 600; font-family: inherit; }
+  .t3 .chip.on { background: #0f172a; border-color: #0f172a; color: #fff; }
+  .t3 .dates { grid-template-columns: repeat(3, 1fr); }
+  .t3 .date { padding: 9px 4px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; color: #334155; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .t3 .date:first-child { grid-column: span 3; border-color: #cbd5e1; background: #f1f5f9; }
+  .t3 .count { font-size: 34px; font-weight: 800; text-align: center; color: #0f172a; margin-bottom: 2px; letter-spacing: -1px; }
+  .t3 .range { text-align: center; font-size: 12px; color: #94a3b8; margin-bottom: 12px; }
+  .t3 .list { margin: 10px 0 12px; display: flex; flex-direction: column; gap: 2px; }
+  .t3 .item { display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 10px; }
+  .t3 .item:hover { background: #f1f5f9; }
+  .t3 .item .t { font-size: 11px; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t3 .danger { width: 100%; padding: 12px; border: none; border-radius: 12px; background: #ef4444; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 8px 18px rgba(239,68,68,0.35); }
+  .t3 .ghost { width: 100%; padding: 9px; margin-top: 8px; background: none; border: 1px solid #e2e8f0; border-radius: 10px; color: #64748b; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .t3.popup {
+    width: 320px; background: #ffffff; border: 1px solid #e5e9f0; border-radius: 18px;
+    box-shadow: 0 14px 36px rgba(15,23,42,0.14); padding: 20px; color: #0f172a;
+  }
+  .t3.popup h1 { font-size: 16px; font-weight: 700; }
+  .t3.popup h1 span { color: #ef4444; }
+  .t3.popup .sub { font-size: 12px; color: #64748b; margin: 4px 0 14px; }
+  .t3.popup .steps { font-size: 12px; color: #475569; line-height: 1.7; padding-left: 16px; margin-bottom: 14px; }
+  .t3.popup .btn { width: 100%; padding: 12px; border: none; border-radius: 12px; background: #0f172a; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .t3.popup .note { margin-top: 12px; font-size: 11px; color: #94a3b8; text-align: center; }
+
+  /* ================= THEME 4 — BERRY DUOTONE ================= */
+  .t4 .overlay {
+    background: #1e1b34;
+    background-image: radial-gradient(120% 90% at 100% 0%, #2b2340 0%, #1e1b34 55%);
+    border: 1px solid #3a2f55;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 13px;
+    padding: 16px;
+    width: 340px;
+  }
+  .t4 .gradbar { height: 4px; border-radius: 2px; background: linear-gradient(90deg,#ec4899,#a855f7,#8b5cf6); margin: -16px -16px 14px; border-radius: 18px 18px 0 0; }
+  .t4 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .t4 .title { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; }
+  .t4 .logo { width: 22px; height: 22px; border-radius: 8px; background: linear-gradient(135deg,#ec4899,#a855f7); display: grid; place-items: center; box-shadow: 0 4px 14px rgba(236,72,153,0.5); }
+  .t4 .logo svg { width: 13px; height: 13px; fill: #fff; }
+  .t4 .close { border: none; background: none; color: #8a7fa8; font-size: 16px; cursor: pointer; }
+  .t4 .label { font-size: 11px; color: #8a7fa8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600; }
+  .t4 .modes, .t4 .dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .t4 .chip { padding: 8px 4px; background: #2b2340; border: 1px solid #3a2f55; border-radius: 999px; color: #b3a8cc; font-size: 12px; cursor: pointer; font-weight: 600; font-family: inherit; }
+  .t4 .chip.on { background: linear-gradient(135deg,#ec4899,#a855f7); border-color: transparent; color: #fff; box-shadow: 0 6px 18px rgba(236,72,153,0.45); }
+  .t4 .dates { grid-template-columns: repeat(3, 1fr); }
+  .t4 .date { padding: 9px 4px; background: #2b2340; border: 1px solid #3a2f55; border-radius: 999px; color: #d9d2ea; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .t4 .date:first-child { grid-column: span 3; border-color: #7c4aa8; background: linear-gradient(135deg,rgba(236,72,153,0.15),rgba(168,85,247,0.15)); }
+  .t4 .count { font-size: 34px; font-weight: 800; text-align: center; background: linear-gradient(135deg,#f472b6,#a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 2px; }
+  .t4 .range { text-align: center; font-size: 12px; color: #9d92bd; margin-bottom: 12px; }
+  .t4 .list { margin: 10px 0 12px; display: flex; flex-direction: column; gap: 2px; }
+  .t4 .item { display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 10px; }
+  .t4 .item:hover { background: rgba(236,72,153,0.08); }
+  .t4 .item .t { font-size: 11px; color: #e6e0f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t4 .danger { width: 100%; padding: 12px; border: none; border-radius: 999px; background: linear-gradient(135deg,#ec4899,#a855f7); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 8px 22px rgba(236,72,153,0.4); }
+  .t4 .ghost { width: 100%; padding: 9px; margin-top: 8px; background: none; border: 1px solid #3a2f55; border-radius: 999px; color: #b3a8cc; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .t4.popup {
+    width: 320px; background: #1e1b34; background-image: radial-gradient(120% 90% at 100% 0%, #2b2340 0%, #1e1b34 55%);
+    border: 1px solid #3a2f55; border-radius: 18px; box-shadow: 0 14px 40px rgba(0,0,0,0.45); padding: 20px; color: #fff;
+  }
+  .t4.popup h1 { font-size: 16px; font-weight: 800; }
+  .t4.popup h1 span { background: linear-gradient(135deg,#f472b6,#a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .t4.popup .sub { font-size: 12px; color: #9d92bd; margin: 4px 0 14px; }
+  .t4.popup .steps { font-size: 12px; color: #c9c2dd; line-height: 1.7; padding-left: 16px; margin-bottom: 14px; }
+  .t4.popup .btn { width: 100%; padding: 12px; border: none; border-radius: 999px; background: linear-gradient(135deg,#ec4899,#a855f7); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 8px 20px rgba(236,72,153,0.35); }
+  .t4.popup .note { margin-top: 12px; font-size: 11px; color: #8a7fa8; text-align: center; }
+
+  /* ================= THEME 5 — STEALTH HUD ================= */
+  .t5 .overlay {
+    background: #0a0a0c;
+    border: 1px solid #1d1d22;
+    border-radius: 10px;
+    color: #e4e4e7;
+    font-size: 12px;
+    padding: 14px;
+    width: 320px;
+  }
+  .t5 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .t5 .title { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px; color: #fff; }
+  .t5 .pulse { width: 7px; height: 7px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.8); }
+  .t5 .close { border: none; background: none; color: #52525b; font-size: 14px; cursor: pointer; font-family: monospace; }
+  .t5 .label { font-size: 10px; color: #71717a; font-family: monospace; text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 8px; }
+  .t5 .modes, .t5 .dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+  .t5 .chip { padding: 7px 4px; background: none; border: 1px solid #26262c; border-radius: 4px; color: #a1a1aa; font-size: 11px; cursor: pointer; font-family: monospace; }
+  .t5 .chip.on { background: #18181b; border-color: #ef4444; color: #fff; }
+  .t5 .dates { grid-template-columns: repeat(3, 1fr); }
+  .t5 .date { padding: 8px 4px; background: none; border: 1px solid #26262c; border-radius: 4px; color: #c4c4cc; font-size: 11px; cursor: pointer; font-family: monospace; }
+  .t5 .date:first-child { grid-column: span 3; border-color: #3f3f46; }
+  .t5 .count { font-size: 32px; font-weight: 700; text-align: center; color: #fff; font-family: 'SF Mono', ui-monospace, monospace; letter-spacing: -1px; margin-bottom: 2px; }
+  .t5 .count b { color: #ef4444; }
+  .t5 .range { text-align: center; font-size: 11px; color: #71717a; font-family: monospace; margin-bottom: 10px; }
+  .t5 .list { margin: 8px 0 10px; display: flex; flex-direction: column; gap: 1px; }
+  .t5 .item { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 3px; }
+  .t5 .item:hover { background: #18181b; }
+  .t5 .item .t { font-size: 11px; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t5 .danger { width: 100%; padding: 10px; border: 1px solid #ef4444; border-radius: 4px; background: transparent; color: #ef4444; font-weight: 700; font-size: 12px; cursor: pointer; font-family: monospace; letter-spacing: 0.4px; }
+  .t5 .danger:hover { background: #ef4444; color: #0a0a0c; }
+  .t5 .ghost { width: 100%; padding: 8px; margin-top: 6px; background: none; border: 1px solid #26262c; border-radius: 4px; color: #71717a; font-size: 11px; cursor: pointer; font-family: monospace; }
+  .t5.popup {
+    width: 300px; background: #0a0a0c; border: 1px solid #1d1d22; border-radius: 10px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6); padding: 18px; color: #e4e4e7;
+  }
+  .t5.popup h1 { font-size: 14px; font-weight: 700; font-family: monospace; letter-spacing: 0.4px; color: #fff; }
+  .t5.popup h1 span { color: #ef4444; }
+  .t5.popup .sub { font-size: 11px; color: #71717a; font-family: monospace; margin: 5px 0 14px; }
+  .t5.popup .steps { font-size: 11px; color: #a1a1aa; font-family: monospace; line-height: 1.8; padding-left: 16px; margin-bottom: 14px; }
+  .t5.popup .btn { width: 100%; padding: 11px; border: 1px solid #ef4444; border-radius: 4px; background: transparent; color: #ef4444; font-weight: 700; font-size: 12px; cursor: pointer; font-family: monospace; letter-spacing: 0.4px; }
+  .t5.popup .note { margin-top: 12px; font-size: 10px; color: #52525b; text-align: center; font-family: monospace; }
+</style>
+</head>
+<body>
+  <h1>UI Theme Demo — YouTube Shorts Cleaner</h1>
+  <p class="sub">Each column = one theme. Top = browser popup, bottom = in-page panel. Pick one (or mix). <b>1</b> and <b>2</b> recommended.</p>
+
+  <div class="themes">
+
+    <!-- 1 -->
+    <div class="theme">
+      <div class="theme-label"><span class="num">1</span> Redline <small>— navy + red, glazed</small></div>
+      <div class="t1 popup">
+        <h1>YouTube <span>Shorts</span> Cleaner</h1>
+        <p class="sub">Deletes watched Shorts from your history by date range.</p>
+        <ol class="steps">
+          <li>Open your YouTube History page.</li>
+          <li>Pick a date range on the panel.</li>
+          <li>Confirm the count — we delete them.</li>
+        </ol>
+        <button class="btn">Open YouTube History</button>
+        <p class="note">Make sure you're signed into YouTube.</p>
+      </div>
+      <div class="t1 overlay">
+        <div class="head"><div class="title"><span class="logo"><svg viewBox="0 0 24 24"><path d="M10 9l5 3-5 3V9z"/></svg></span> YouTube Shorts Cleaner</div><button class="close">✕</button></div>
+        <div class="label">Mode</div>
+        <div class="modes"><button class="chip on">Shorts</button><button class="chip">Videos</button><button class="chip">All</button></div>
+        <div class="label">Date range</div>
+        <div class="dates"><button class="date">Today</button><button class="date">Yesterday</button><button class="date">Last 3 Days</button><button class="date">Last 7 Days</button><button class="date">Last 30 Days</button></div>
+        <div class="count">6</div>
+        <div class="range">Videos found · Last 7 Days</div>
+        <div class="list">
+          <div class="item"><div class="thumb"></div><div class="t">A 1:16:34 long-form cooking video</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">10:24 deep-dive tech review</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">13:10 documentary clip</div></div>
+        </div>
+        <button class="danger">Delete Videos</button>
+        <button class="ghost">Choose Another Range</button>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="theme">
+      <div class="theme-label"><span class="num">2</span> Midnight Glass <small>— frosted + neon</small></div>
+      <div class="t2 popup">
+        <h1>YouTube <span>Shorts</span> Cleaner</h1>
+        <p class="sub">Deletes watched Shorts from your history by date range.</p>
+        <ol class="steps">
+          <li>Open your YouTube History page.</li>
+          <li>Pick a date range on the panel.</li>
+          <li>Confirm the count — we delete them.</li>
+        </ol>
+        <button class="btn">Open YouTube History</button>
+        <p class="note">Make sure you're signed into YouTube.</p>
+      </div>
+      <div class="t2 overlay">
+        <div class="head"><div class="title"><span class="logo"><svg viewBox="0 0 24 24"><path d="M10 9l5 3-5 3V9z"/></svg></span> YouTube Shorts Cleaner</div><button class="close">✕</button></div>
+        <div class="label">Mode</div>
+        <div class="modes"><button class="chip on">Shorts</button><button class="chip">Videos</button><button class="chip">All</button></div>
+        <div class="label">Date range</div>
+        <div class="dates"><button class="date">Today</button><button class="date">Yesterday</button><button class="date">Last 3 Days</button><button class="date">Last 7 Days</button><button class="date">Last 30 Days</button></div>
+        <div class="count">6</div>
+        <div class="range">Videos found · Last 7 Days</div>
+        <div class="list">
+          <div class="item"><div class="thumb"></div><div class="t">A 1:16:34 long-form cooking video</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">10:24 deep-dive tech review</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">13:10 documentary clip</div></div>
+        </div>
+        <button class="danger">Delete Videos</button>
+        <button class="ghost">Choose Another Range</button>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="theme">
+      <div class="theme-label"><span class="num">3</span> Slate Light <small>— clean &amp; airy</small></div>
+      <div class="t3 popup">
+        <h1>YouTube <span>Shorts</span> Cleaner</h1>
+        <p class="sub">Deletes watched Shorts from your history by date range.</p>
+        <ol class="steps">
+          <li>Open your YouTube History page.</li>
+          <li>Pick a date range on the panel.</li>
+          <li>Confirm the count — we delete them.</li>
+        </ol>
+        <button class="btn">Open YouTube History</button>
+        <p class="note">Make sure you're signed into YouTube.</p>
+      </div>
+      <div class="t3 overlay">
+        <div class="head"><div class="title"><span class="logo"><svg viewBox="0 0 24 24"><path d="M10 9l5 3-5 3V9z"/></svg></span> YouTube Shorts Cleaner</div><button class="close">✕</button></div>
+        <div class="label">Mode</div>
+        <div class="modes"><button class="chip on">Shorts</button><button class="chip">Videos</button><button class="chip">All</button></div>
+        <div class="label">Date range</div>
+        <div class="dates"><button class="date">Today</button><button class="date">Yesterday</button><button class="date">Last 3 Days</button><button class="date">Last 7 Days</button><button class="date">Last 30 Days</button></div>
+        <div class="count">6</div>
+        <div class="range">Videos found · Last 7 Days</div>
+        <div class="list">
+          <div class="item"><div class="thumb"></div><div class="t">A 1:16:34 long-form cooking video</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">10:24 deep-dive tech review</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">13:10 documentary clip</div></div>
+        </div>
+        <button class="danger">Delete Videos</button>
+        <button class="ghost">Choose Another Range</button>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="theme">
+      <div class="theme-label"><span class="num">4</span> Berry Duotone <small>— plum + pink gradient</small></div>
+      <div class="t4 popup">
+        <h1>YouTube <span>Shorts</span> Cleaner</h1>
+        <p class="sub">Deletes watched Shorts from your history by date range.</p>
+        <ol class="steps">
+          <li>Open your YouTube History page.</li>
+          <li>Pick a date range on the panel.</li>
+          <li>Confirm the count — we delete them.</li>
+        </ol>
+        <button class="btn">Open YouTube History</button>
+        <p class="note">Make sure you're signed into YouTube.</p>
+      </div>
+      <div class="t4 overlay">
+        <div class="gradbar"></div>
+        <div class="head"><div class="title"><span class="logo"><svg viewBox="0 0 24 24"><path d="M10 9l5 3-5 3V9z"/></svg></span> YouTube Shorts Cleaner</div><button class="close">✕</button></div>
+        <div class="label">Mode</div>
+        <div class="modes"><button class="chip on">Shorts</button><button class="chip">Videos</button><button class="chip">All</button></div>
+        <div class="label">Date range</div>
+        <div class="dates"><button class="date">Today</button><button class="date">Yesterday</button><button class="date">Last 3 Days</button><button class="date">Last 7 Days</button><button class="date">Last 30 Days</button></div>
+        <div class="count">6</div>
+        <div class="range">Videos found · Last 7 Days</div>
+        <div class="list">
+          <div class="item"><div class="thumb"></div><div class="t">A 1:16:34 long-form cooking video</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">10:24 deep-dive tech review</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">13:10 documentary clip</div></div>
+        </div>
+        <button class="danger">Delete Videos</button>
+        <button class="ghost">Choose Another Range</button>
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="theme">
+      <div class="theme-label"><span class="num">5</span> Stealth HUD <small>— monochrome minimal</small></div>
+      <div class="t5 popup">
+        <h1>YouTube <span>Shorts</span> Cleaner</h1>
+        <p class="sub">Deletes watched Shorts from your history by date range.</p>
+        <ol class="steps">
+          <li>Open your YouTube History page.</li>
+          <li>Pick a date range on the panel.</li>
+          <li>Confirm the count — we delete them.</li>
+        </ol>
+        <button class="btn">Open YouTube History</button>
+        <p class="note">Make sure you're signed into YouTube.</p>
+      </div>
+      <div class="t5 overlay">
+        <div class="head"><div class="title"><span class="pulse"></span> YTS-CLEANER v2</div><button class="close">✕</button></div>
+        <div class="label">[ MODE ]</div>
+        <div class="modes"><button class="chip on">shorts</button><button class="chip">videos</button><button class="chip">all</button></div>
+        <div class="label">[ RANGE ]</div>
+        <div class="dates"><button class="date">today</button><button class="date">yesterday</button><button class="date">3 days</button><button class="date">7 days</button><button class="date">30 days</button></div>
+        <div class="count"><b>6</b></div>
+        <div class="range">videos · last 7 days</div>
+        <div class="list">
+          <div class="item"><div class="thumb"></div><div class="t">1:16:34 cooking video</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">10:24 tech review</div></div>
+          <div class="item"><div class="thumb"></div><div class="t">13:10 documentary</div></div>
+        </div>
+        <button class="danger">DEL DELETE VIDEOS</button>
+        <button class="ghost">another range</button>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
