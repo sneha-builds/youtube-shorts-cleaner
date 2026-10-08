@@ -11,7 +11,7 @@ A Chrome extension (Manifest V3) that deletes watched **YouTube Shorts / Videos*
 - On confirm, clicks "Remove from watch history" on each matching Short, one by one, with a live progress counter
    
 **No Google Cloud setup, no API keys, no OAuth, no background worker.** Everything runs locally in your browser.  
-
+ 
 ## How it works
 
 The UI lives **on the YouTube history page**. When you open `youtube.com/feed/history`, the content script injects a floating panel in the top-right corner. There is no backend and nothing is sent anywhere — all detection and deletion happens through the page's own UI.
